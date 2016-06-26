@@ -1,5 +1,5 @@
 #OBJS specifies which files to compile as part of the project
-OBJS = main.c constants.c slot.c
+OBJS = slot.c main.c constants.c matrix.c functions.c slot_draw.c
 
 #CC specifies which compiler we're using
 CC = gcc
@@ -17,7 +17,7 @@ LIBRARY_PATHS = -LC:\SDL32\lib
 #COMPILER_FLAGS = -w -Wl,-subsystem,windows
 
 #LINKER_FLAGS specifies the libraries we're linking against
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2
+LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -std=c99
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = main
