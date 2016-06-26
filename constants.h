@@ -1,8 +1,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define BOARD_ROWS 3
-#define BOARD_COLS 3
-#define VICTORY_CONDITION 3
+#define TRANSPARENT_R 255
+#define TRANSPARENT_G 0
+#define TRANSPARENT_B 255
+
+#define MOON 3
+#define STAR 4
 
 #endif

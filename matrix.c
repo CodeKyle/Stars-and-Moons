@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 
 #include "matrix.h"
@@ -34,29 +33,7 @@ int get_matrix_value(const struct Matrix* matrix, size_t row, size_t col)
     return matrix->values[matrix->rows * row + col];
 }
 
-void print_matrix_value(const struct Matrix* matrix, size_t row, size_t col)
-{
-    printf("%2d ", matrix->values[matrix->rows * row + col]);
-}
-
-void print_all_matrix_values(const struct Matrix* matrix, bool break_rows)
-{
-    int rows = matrix->rows;
-    int cols = matrix->cols;
-
-    for (size_t i = 0; i < rows; ++i)
-    {
-        for (size_t j = 0; j < cols; ++j)
-        {
-            print_matrix_value(matrix, i, j);
-        }
-
-        if (break_rows)
-            printf("\n");
-    }
-}
-
-void destroy_matrix(struct Matrix* matrix)
+int destroy_matrix(struct Matrix* matrix)
 {
     if (matrix != NULL)
     {
@@ -64,5 +41,8 @@ void destroy_matrix(struct Matrix* matrix)
             free(matrix->values);
 
         free(matrix);
+        return 0;
     }
+
+    return 1;
 }
