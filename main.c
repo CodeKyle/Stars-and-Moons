@@ -17,8 +17,10 @@
 #define TRANSPARENT_G 0
 #define TRANSPARENT_B 255
 
-enum coord {X_AXIS, Y_AXIS};
+#define CURSOR_WIDTH 100
+#define CURSOR_HEIGHT 100
 
+enum coord {X_AXIS, Y_AXIS};
 
 /*  Returns either the width or the height of the display device indicated
     by 'index'. The value for 'coord_type' must be either X_AXIS for the
@@ -65,23 +67,16 @@ int load_images(size_t size, SDL_Surface *image_array[], const char * const imag
     return errors;
 }
 
-void update_surface(SDL_Window *window, SDL_Surface *surface, SDL_Rect area)
+/*  If a width or height was specified for 'area', then scale 'surface' to fit
+    those dimensions. Otherwise, just blit the 'surface' at the provided
+    (x, y) coordinates on the surface of 'window'. Returns a negative value
+    if the blit is unsuccessful, or 0 if it was successful. */
+int update_surface(SDL_Window *window, SDL_Surface *surface, SDL_Rect area)
 {
-    SDL_BlitSurface(surface, &area, SDL_GetWindowSurface(window), &area);   
-}
-
-void update_background(SDL_Window *window, SDL_Surface *background, SDL_Rect pos)
-{  
-    SDL_BlitSurface(background, &pos, SDL_GetWindowSurface(window), &pos);
-}
-
-void draw_cursor(SDL_Window *window, SDL_Surface *cursor, SDL_Rect area)
-{
-    area.w = 32;
-    area.h = 32;
-    
-    SDL_BlitSurface(cursor, NULL, SDL_GetWindowSurface(window), &area);
-    //SDL_BlitScaled(cursor, NULL, SDL_GetWindowSurface(window), &area);   
+    if (area.w || area.h)
+        return SDL_BlitScaled(surface, NULL, SDL_GetWindowSurface(window), &area);
+    else
+        return SDL_BlitSurface(surface, NULL, SDL_GetWindowSurface(window), &area);   
 }
 
 int main(int argc, char *argv[])
@@ -104,25 +99,18 @@ int main(int argc, char *argv[])
                                           NATIVE_WIDTH, NATIVE_HEIGHT, SDL_WINDOW_RESIZABLE);
     SDL_ShowWindow(window);
     
-    //int window_width = NATIVE_WIDTH;
-    //int window_height = NATIVE_HEIGHT;
+    int window_width = NATIVE_WIDTH;
+    int window_height = NATIVE_HEIGHT;
     
-    SDL_Rect background_area = {0, 0, NATIVE_WIDTH, NATIVE_HEIGHT};
-
-    update_surface(window, images[BACKGROUND], (SDL_Rect){0, 0, NATIVE_WIDTH, NATIVE_HEIGHT});
+    SDL_Rect background_pos = {0, 0, window_width, window_height};
+    update_surface(window, images[BACKGROUND], background_pos);   
     
-    
+    SDL_Surface *cursor = images[MOON];
+    SDL_Rect cursor_pos;  
+        
     SDL_Event event;
-    SDL_Rect curs;
-    
-        SDL_Surface *cursor = images[ICON];
-        int cursor_height = 32;
-        int cursor_width = 32;
-        
     while (1)
-    {
-
-        
+    {        
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_QUIT)
@@ -134,13 +122,10 @@ int main(int argc, char *argv[])
             {
                 int mouse_x = 0, mouse_y = 0;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
-                SDL_Rect cursor_pos = {mouse_x, mouse_y, cursor_width, cursor_height};
-                SDL_Rect background_pos = {mouse_x - 50, mouse_y - 50, cursor_width + 100, cursor_height + 100};
+                cursor_pos = (SDL_Rect){mouse_x, mouse_y, CURSOR_WIDTH, CURSOR_HEIGHT};
                 
-                //draw_cursor(window, cursor, cursor_pos);
-                update_surface(window, images[BACKGROUND], (SDL_Rect){0, 0, NATIVE_WIDTH, NATIVE_HEIGHT});
-                //update_surface(window, images[BACKGROUND], background_pos);        
-                draw_cursor(window, cursor, cursor_pos);
+                update_surface(window, images[BACKGROUND], background_pos);
+                update_surface(window, images[MOON], cursor_pos);
 
                 SDL_UpdateWindowSurface(window);
 
@@ -149,7 +134,13 @@ int main(int argc, char *argv[])
             {
                 if (event.window.event == SDL_WINDOWEVENT_RESIZED)
                 {
-
+                    SDL_GetWindowSize(window, &window_width, &window_height);
+                    background_pos = (SDL_Rect){0, 0, window_width, window_height};
+                    
+                    update_surface(window, images[BACKGROUND], background_pos);
+                    update_surface(window, images[MOON], cursor_pos);
+    
+                    SDL_UpdateWindowSurface(window);
                 }
                 
             }
