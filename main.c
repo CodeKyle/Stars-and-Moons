@@ -3,11 +3,30 @@
 
 #include "constants.h"
 #include "game_state.h"
+#include "graphic_resources.h"
 #include "matrix.h"
+#include "window.h"
+
+#include "SDL.h" // remove
 
 int main(int argc, char *argv[])
 {
 	printf("Welcome to Stars and Moons!\n");
+
+	struct Window *window = create_window("Hello", 20, 20, 200, 200);
+
+	struct GraphicResources *gr = create_graphic_resources();
+	initialize_image_array(gr, 1);
+	load_image(gr, "assets/moon.bmp");
+	draw(window, gr);
+
+
+	SDL_Delay(2000);
+
+	destroy_window(window);
+
+	return 0;
+	
 
 	// Initialize game data.
 	struct GameState game_state;
@@ -69,7 +88,9 @@ int main(int argc, char *argv[])
 							  get_game_player(&game_state));
 
 		// Check victory condition.
-
+		int victory = check_victory_conditions(&game_state, 
+											   get_game_player(&game_state));
+		printf("Victory = %d\n", victory);
 		// Switch player.
 		/*
 		if (get_game_player(&game_state) == 1)
@@ -81,6 +102,7 @@ int main(int argc, char *argv[])
 
 	// Clean up.
 	destroy_game_state(&game_state);
+	
 
     return 0;
 }

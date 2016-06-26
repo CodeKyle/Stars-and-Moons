@@ -50,55 +50,63 @@ int get_game_matrix_value(const struct GameState *game_state, size_t row,
 	return get_matrix_value(game_state->matrix, row, col);
 }
 
-
-
-int check_path(const struct GameState *game_state, int player_turn, 
-				int curr_row, int curr_col, int row_mod, int col_mod,
-				int victory_condition)
+int check_line(const struct GameState *game_state, size_t beg_row, 
+				size_t beg_col, int row_mod, int col_mod,
+				size_t limit, int player_turn)
 {
-	// Make sure index will not be out of range.
-	//printf("row mod = %d, col_mod = %d\n", row_mod, col_mod);
-	//printf("victory condition = %d\n", victory_condition);
-	int last_row, last_col;
-
-	if (row_mod != 0)
-		last_row = curr_row + (row_mod * victory_condition) - 1;
-	else 
-		last_row = curr_row;
-
-	if (col_mod != 0)
-		last_col = curr_col + (col_mod * victory_condition) - 1;
-	else
-		last_col = curr_col;
-
-	//printf("last_row = %d, last_col = %d\n", last_row, last_col);
-
 	int victory_progress = 0;
 
-	if ( (row_mod != 0) && (last_row < 0 || last_row >= BOARD_ROWS) || 
-		 (col_mod != 0) && (last_col < 0 || last_col >= BOARD_COLS))
+	for (size_t count = 0; count < limit; count++)
 	{
-		printf("check_path out of range -1\n");
-		return -1;
-	}
-	else
-	{
-		for (size_t i = curr_row; i <= last_row; i += row_mod)
-		{
-			for (size_t j = curr_col; j <= last_col; j += col_mod)
-			{
-				if (get_matrix_value(game_state->matrix, i, j) == player_turn)
-				{
-					++victory_progress;
-					//printf("victory_progress == %d\n", victory_progress);
-					if (victory_progress == victory_condition)
-						return 1;
-				}
-
-			}
-		}
+		if (get_matrix_value(game_state->matrix,
+							 beg_row + (row_mod * count),
+							 beg_col + (col_mod * count)) == player_turn)
+			++victory_progress;
 	}
 
+	return victory_progress;
+}
+
+int check_victory_conditions(const struct GameState *game_state,
+							 int player_turn)
+{
+	int victory = 0;
+
+	// Check for horizontal victory in all rows of board.
+	for (size_t row_pos = 0; row_pos < BOARD_ROWS; ++row_pos)
+	{
+		victory = check_line(game_state, row_pos, 0, 0, 1, 
+								 VICTORY_CONDITION, player_turn);
+
+		if (victory == VICTORY_CONDITION)
+			return 1;
+	} 
+
+	// Check for vertical victory in all columns of board.
+	for (size_t col_pos = 0; col_pos < BOARD_COLS; ++col_pos)
+	{
+		victory = check_line(game_state, 0, col_pos, 1, 0, 
+								 VICTORY_CONDITION, player_turn);
+
+		if (victory == VICTORY_CONDITION)
+			return 1;
+	} 
+
+	// Check for a "forward-slash" victory.
+	victory = check_line(game_state, 0, 0, 1, 1, 
+							 VICTORY_CONDITION, player_turn);
+
+	if (victory == VICTORY_CONDITION)
+		return 1;
+
+	// Check for a "back-slash" victory.
+	victory = check_line(game_state, 2, 0, -1, 1, 
+							 VICTORY_CONDITION, player_turn);
+
+	if (victory == VICTORY_CONDITION)
+		return 1;
+
+	// If here, victory has not been found. Return 0.
 	return 0;
 }
 

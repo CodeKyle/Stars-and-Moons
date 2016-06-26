@@ -45,6 +45,19 @@ void set_game_matrix_value(struct GameState *game_state, size_t row,
 int get_game_matrix_value(const struct GameState *game_state, size_t row,
 						   size_t col);
 
+/*	Checks the amount of consecutive instances of 'player_turn' in the matrix
+	of 'game_state'. The first position checked is ('beg_row', 'beg_col').
+	Arguments 'row_mod' and 'col_mod' determine what direction the check
+	is taking place in. */	
+int check_line(const struct GameState *game_state, size_t beg_row, 
+				size_t beg_col, int row_mod, int col_mod,
+				size_t limit, int player_turn);
+
+/*	Checks all possible victory conditions.
+	Returns 1 if victory was successful. */
+int check_victory_conditions(const struct GameState *game_state,
+							 int player_turn);
+
 /*	Sets the player_turn in 'game_state' to 'player_turn'. */
 void set_game_player(struct GameState *game_state, int player_turn);
 
