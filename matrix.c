@@ -1,97 +1,64 @@
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
 
-#include "constants.c"
 #include "matrix.h"
 
-void clear_matrix(int blank, int width, int height, int matrix[width][height])
+struct Matrix* create_matrix(size_t rows, size_t cols)
 {
-    for (size_t r = 0; r < width; ++r)
+    struct Matrix *new_matrix = malloc(sizeof(struct Matrix));
+
+    new_matrix->rows = rows;
+    new_matrix->cols = cols;
+    new_matrix->values = malloc(sizeof(int) * (rows * cols));
+
+    return new_matrix;
+}
+
+void set_matrix_value(struct Matrix *matrix, size_t row, size_t col, int value)
+{
+    matrix->values[matrix->rows * row + col] = value;
+}
+
+void set_all_matrix_values(struct Matrix* matrix, int value)
+{
+    int rows = matrix->rows;
+    int cols = matrix->cols;
+
+    for (size_t i = 0; i < rows; ++i)
+        for (size_t j = 0; j < cols; ++j)
+            set_matrix_value(matrix, i, j, value);
+}
+
+void print_matrix_value(const struct Matrix* matrix, size_t row, size_t col)
+{
+    printf("%d ", matrix->values[matrix->rows * row + col]);
+}
+
+void print_all_matrix_values(const struct Matrix* matrix, bool break_rows)
+{
+    int rows = matrix->rows;
+    int cols = matrix->cols;
+
+    for (size_t i = 0; i < rows; ++i)
     {
-        for (size_t c = 0; c < height; ++c)
+        for (size_t j = 0; j < cols; ++j)
         {
-            matrix[r][c] = blank;
+            print_matrix_value(matrix, i, j);
         }
+
+        if (break_rows)
+            printf("\n");
     }
 }
 
-void print_matrix_values(int width, int height, int matrix[width][height])
+void destroy_matrix(struct Matrix* matrix)
 {
-    for (size_t r = 0; r < width; ++r)
+    if (matrix != NULL)
     {
-        for (size_t c = 0; c < height; ++c)
-        {
-            printf("%2d ", matrix[r][c]);
-        }
-        
-        printf("\n");
+        if (matrix->values != NULL)
+            free(matrix->values);
+
+        free(matrix);
     }
-    
-    printf("\n");
-}
-
-
-void set_matrix_value(int value, int row, int col, int width, int height, int matrix[width][height])
-{
-    matrix[row][col] = value;
-}
-
-int check_matrix_value(int value, int row, int col, int width, int height, int matrix[width][height])
-{
-    if (matrix[row][col] == value)
-        return 1;
-    else  
-        return 0;
-}
-
-int check_matrix_path(int value, int steps, int row, int col, int row_step, int col_step,
-                      int width, int height, int matrix[width][height])
-{
-    // If any of the indices are out of range, return 0.
-    if (row < 0 || col < 0 || row > width - 1 || col > height - 1)
-        return 0;
-        
-    else if (steps >= 0)
-    {        
-        if (check_matrix_value(value, row, col, width, height, matrix))
-        {
-            // Branch out and check in the opposite directions for the same 'value'.
-            return 1 + check_matrix_path(value, steps - 1, row - row_step, col - col_step, row_step, col_step, width, height, matrix)
-                     + check_matrix_path(value, steps - 1, row + row_step, col + col_step, row_step, col_step, width, height, matrix);
-        }
-    }
-    
-    return 0;
-}
-
-int check_victory(int token, int row, int col, int width, int height, int matrix[width][height])
-{
-    int value = 0;
-    int threshold = VICTORY_CONDITION; // Hardcoded for maximum inefficiency. 
-    
-    // Check for horizontal victory.
-    value = check_matrix_path(token, VICTORY_CONDITION - 1, row, col, 0, 1, width, height, matrix);
-    //printf("Horizontal value = %d\n", value);
-    if (value > threshold)
-        return 1;
-    
-    // Check for vertical victory.
-    value = check_matrix_path(token, VICTORY_CONDITION - 1, row, col, 1, 0, width, height, matrix);
-    //printf("Vertical value = %d\n", value);
-    if (value >  threshold)
-        return 1;
-
-    // Check for \ victory.
-    value = check_matrix_path(token, VICTORY_CONDITION - 1, row, col, 1, 1, width, height, matrix);
-    //printf("\\ value = %d\n", value);
-    if (value >  threshold)
-        return 1;
-    
-    // Check for / victory.
-    value = check_matrix_path(token, VICTORY_CONDITION - 1, row, col, -1, 1, width, height, matrix);
-    //printf("/ value = %d\n", value);
-    if (value >  threshold)
-        return 1;
-        
-    return 0;
 }

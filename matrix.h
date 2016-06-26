@@ -1,34 +1,42 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-/*  Replaces all the integers in 'matrix' with 'blank'. */
-void clear_matrix(int blank, int width, int height, int matrix[width][height]);
+#include <stdbool.h>
 
-/*  Prints all the characters in 'matrix'. Each row appears on a new
-    line, and an extra new line is added after the the last row
-    is printed. */
-void print_matrix_values(int width, int height, int matrix[width][height]);
+/*  Matrix is a structure that represents a grid with a specified amount of
+    'rows' and 'cols', each position containing its own integer value. */
+struct Matrix
+{
+    size_t rows;
+    size_t cols;
+    int *values;
+};
 
-/*  Sets 'matrix[row][col]' to the 'char'. */
-void set_matrix_value(int value, int row, int col, int width, int height, int matrix[width][height]);
+/*  Creates a new matrix with 'rows' rows and 'cols' columns.
+    Returns a pointer to the created matrix.
+    Note: Be sure to call destroy_matrix() to prevent memory leaks. */
+struct Matrix* create_matrix(size_t rows, size_t cols);
 
-/*  Checks if 'matrix[row][col]' is equal to 'value'. Returns 1
-    if true, otherwise 0. */
-int check_matrix_value(int value, int row, int col, int width, int height, int matrix[width][height]);
+/*  Sets the 'value' at position ('row', 'col') in 'matrix'. */
+void set_matrix_value(struct Matrix* matrix, size_t row, size_t col, 
+                        int value);
 
-/*  Checks how many consecutive times 'value' appears in the 'matrix'. 'step'
-    specifies how many times to look in each direction, and 'row_step' and 
-    col_step' specifies the adjustment row/col adjustments to be made on
-    each 'step'.
-    
-    TODO: Clean up this function. The value returned is unpredictable. */
-int check_matrix_path(int value, int steps, int row, int col, int row_step, int col_step,
-                      int width, int height, int matrix[width][height]);
+/*  Sets the 'value' for all positions in 'matrix'. */
+void set_all_matrix_values(struct Matrix* matrix, int value);
 
-/*  Checks to see if a given 'value' is present in the'matrix' the amount of times
-    specified by 'victory_condition', starting at position 'matrix[row][col]'.
-    
-    TODO: Add 'victory_condition' as an argument.*/
-int check_victory(int token, int row, int col, int width, int height, int matrix[width][height]);
+/*  Gets the value held at position ('row', 'col') of 'matrix'. 
+    Returns the value at said position. */
+int get_matrix_value(struct Matrix* matrix, size_t row, size_t col);
+
+/*  Prints the 'value' at position ('row', 'col') in 'matrix'. */
+void print_matrix_value(const struct Matrix* matrix, size_t row, size_t col);
+
+/*  Prints every 'value' in 'matrix'. If 'row_break' is true, then a new line
+    will be printed after each row. */
+void print_all_matrix_values(const struct Matrix* matrix, bool break_rows);
+
+/*  Destroys the 'matrix', freeing all memory allocated within the structure.
+    Note: All pointers related to the structure will be set to NULL after. */
+void destroy_matrix(struct Matrix* matrix);
 
 #endif
