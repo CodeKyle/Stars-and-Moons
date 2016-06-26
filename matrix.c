@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stddef.h>
 #include <stdlib.h>
 
 #include "matrix.h"
@@ -30,9 +29,14 @@ void set_all_matrix_values(struct Matrix* matrix, int value)
             set_matrix_value(matrix, i, j, value);
 }
 
+int get_matrix_value(const struct Matrix* matrix, size_t row, size_t col)
+{
+    return matrix->values[matrix->rows * row + col];
+}
+
 void print_matrix_value(const struct Matrix* matrix, size_t row, size_t col)
 {
-    printf("%d ", matrix->values[matrix->rows * row + col]);
+    printf("%2d ", matrix->values[matrix->rows * row + col]);
 }
 
 void print_all_matrix_values(const struct Matrix* matrix, bool break_rows)
