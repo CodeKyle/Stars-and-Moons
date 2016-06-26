@@ -1,24 +1,9 @@
 #include "SDL.h"
 #include <stdio.h>
 
-#define WINDOW_TITLE "Stars and Moons"
-#define NATIVE_WIDTH 960
-#define NATIVE_HEIGHT 640
+#include "constants.c"
+#include "slot.h"
 
-#define IMAGE_COUNT 5
-
-#define BACKGROUND 0
-#define STAR 1
-#define MOON 2
-#define BOARD 3
-#define ICON 4
-
-#define TRANSPARENT_R 255
-#define TRANSPARENT_G 0
-#define TRANSPARENT_B 255
-
-#define CURSOR_WIDTH 100
-#define CURSOR_HEIGHT 100
 
 enum coord {X_AXIS, Y_AXIS};
 
@@ -79,6 +64,22 @@ int update_surface(SDL_Window *window, SDL_Surface *surface, SDL_Rect area)
         return SDL_BlitSurface(surface, NULL, SDL_GetWindowSurface(window), &area);   
 }
 
+int draw_surface(SDL_Window *window, SDL_Surface *surface, SDL_Rect area)
+{
+    if (area.w || area.h)
+        return SDL_BlitScaled(surface, NULL, SDL_GetWindowSurface(window), &area);
+    else
+        return SDL_BlitSurface(surface, NULL, SDL_GetWindowSurface(window), &area);   
+}
+
+int mouse_over_area(int mouse_x, int mouse_y, int x, int y, int w, int h)
+{
+    if (mouse_x >= x && mouse_x <= x + w && mouse_y >= y && mouse_y <= y + h)
+        return 1;
+    else
+        return 0;
+}
+
 int main(int argc, char *argv[])
 {
     SDL_Init(SDL_INIT_VIDEO);
@@ -89,7 +90,7 @@ int main(int argc, char *argv[])
     if (x && y)
         printf("Display device resolution is %d by %d\n", x, y);
         
-    const char * const image_paths[] = {"background.bmp", "star.bmp", "moon.bmp", "board.bmp", "icon.bmp"};
+    const char * const image_paths[] = {"assets//background.bmp", "assets//star.bmp", "assets//moon.bmp", "assets//board.bmp", "assets//icon.bmp"};
     SDL_Surface *images[IMAGE_COUNT];
     int errors = load_images(IMAGE_COUNT, images, image_paths);
     if (errors)
@@ -108,6 +109,12 @@ int main(int argc, char *argv[])
     SDL_Surface *cursor = images[MOON];
     SDL_Rect cursor_pos;  
         
+    struct slot board_slots[BOARD_WIDTH * BOARD_HEIGHT];
+    SDL_Rect board_pos = (SDL_Rect){100, 100, 300, 300};
+    initialize_slot_cluster(board_slots, BOARD_WIDTH, BOARD_HEIGHT, STAR, board_pos.x, board_pos.y,
+                            board_pos.w, board_pos.h);
+    draw_slot_cluster(board_slots, BOARD_WIDTH * BOARD_HEIGHT, images, window);
+    
     SDL_Event event;
     while (1)
     {        
@@ -124,8 +131,19 @@ int main(int argc, char *argv[])
                 SDL_GetMouseState(&mouse_x, &mouse_y);
                 cursor_pos = (SDL_Rect){mouse_x, mouse_y, CURSOR_WIDTH, CURSOR_HEIGHT};
                 
-                update_surface(window, images[BACKGROUND], background_pos);
-                update_surface(window, images[MOON], cursor_pos);
+                draw_surface(window, images[BACKGROUND], background_pos);
+                draw_surface(window, images[BOARD], board_pos );                
+                draw_slot_cluster(board_slots, BOARD_WIDTH * BOARD_HEIGHT, images, window);
+                draw_surface(window, images[MOON], cursor_pos);
+                
+                if (mouse_over_area(mouse_x, mouse_y, board_pos.x, board_pos.y, board_pos.w, board_pos.h))
+                {
+                    struct slot* ptr = get_slot_at_pos(board_slots, BOARD_WIDTH * BOARD_HEIGHT, mouse_x, mouse_y);
+                    if (ptr != NULL)
+                    {
+                        ptr->value = MOON;
+                    }
+                }
 
                 SDL_UpdateWindowSurface(window);
 
@@ -136,9 +154,17 @@ int main(int argc, char *argv[])
                 {
                     SDL_GetWindowSize(window, &window_width, &window_height);
                     background_pos = (SDL_Rect){0, 0, window_width, window_height};
+                    board_pos = (SDL_Rect){ window_width / 2 - board_pos.w / 2,
+                                                    window_height / 2 - board_pos.h / 2,
+                                                    board_pos.w, board_pos.h};
                     
-                    update_surface(window, images[BACKGROUND], background_pos);
-                    update_surface(window, images[MOON], cursor_pos);
+                    draw_surface(window, images[BACKGROUND], background_pos);
+                    draw_surface(window, images[MOON], cursor_pos);                    
+                    draw_surface(window, images[BOARD], board_pos );
+                    
+                    set_slot_cluster_area(board_slots, BOARD_WIDTH, BOARD_HEIGHT,
+                                            board_pos.x, board_pos.y,
+                                            board_pos.w, board_pos.h);                 
     
                     SDL_UpdateWindowSurface(window);
                 }
