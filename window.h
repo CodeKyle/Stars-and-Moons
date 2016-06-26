@@ -6,7 +6,10 @@
 #include "game_state.h"
 #include "graphic_resources.h"
 
-#define GAME_BOARD_WIDTH_RATIO .5
+#define WINDOW_DEFAULT_WIDTH 500
+#define WINDOW_DEFAULT_HEIGHT 500
+#define WINDOW_DEFAULT_ASPECT_RATIO 1.333
+#define GAME_BOARD_WIDTH_RATIO .7
 #define GAME_BOARD_HEIGHT_RATIO .7
 #define DIMENSION_SENTINEL 32767
 
@@ -85,12 +88,22 @@ void draw_window(const struct Window *window,
 	const struct GameState *game_state,
 	const struct GraphicResources *graphic_resources);
 
+/*	Processes the event loop for the 'window', based on information from
+	'game_state' and using the images from 'graphic_resources'. */
+void process_window_events(struct Window *window, struct GameState *game_state,
+	struct GraphicResources *graphic_resources);
+
 /*	Gets the current x-position or y-position of the mouse within 'window'
 	as specified by 'dimension_type'. Valid values for 'dimension_type' are
 	X_POS and Y_POS. 
 	Returns the value of the specified dimension, otherwise 
 		DIMENSION_SENTINEL. */
 int get_mouse_position(const struct Window *window, 
+	enum DimensionType dimension_type);
+
+/*	Same function as get_mouse_position, but implemented to be more efficient.
+	Currently being tested, do not use. */
+int get_mouse_position_test(const struct Window *window,
 	enum DimensionType dimension_type);
 
 // TODO: Rename function and change dimension_type argument.

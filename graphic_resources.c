@@ -88,3 +88,27 @@ int destroy_graphic_resources(struct GraphicResources *graphic_resources)
 
 	return errors;
 }
+
+int load_all_images(size_t image_count,
+	struct GraphicResources *graphic_resources)
+{
+	// TODO: Make this less-hardcoded. 
+	char paths[5][25] = {"assets/background2.bmp", "assets/board2.bmp", 
+		"assets/icon.bmp", "assets/star.bmp", "assets/moon.bmp"};
+
+	int errors = 0;
+	Uint32 transparent_rgb;
+
+	for (size_t i = 0; i < image_count; ++i)
+	{
+		errors += load_image(graphic_resources, paths[i]);
+		transparent_rgb = SDL_MapRGB(graphic_resources->images[i]->format,
+			TRANSPARENT_R, TRANSPARENT_G, TRANSPARENT_B);
+		SDL_SetColorKey(graphic_resources->images[i], SDL_TRUE, transparent_rgb);
+	}
+
+	return errors;
+}
+
+
+

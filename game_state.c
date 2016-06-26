@@ -6,6 +6,7 @@ int initialize_game_state(struct GameState *game_state,
 	size_t rows, size_t cols)
 {
 	game_state->player_turn = GAME_STATE_SENTINEL;
+	game_state->run_game = 1;
 
 	return create_game_matrix(game_state, rows, cols);
 }

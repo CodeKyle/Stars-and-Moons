@@ -3,6 +3,8 @@
 
 #include "window.h"
 
+#include <stdio.h> // removes
+
 int initialize_window(struct Window *window)
 {
 	window->x_pos = window->y_pos = window->height = window->width = 0;
@@ -205,6 +207,8 @@ void draw_window(const struct Window *window,
 	draw_game_pieces(window, game_state, graphic_resources);
 
 	// Check to see if the mouse is over a game piece.
+
+	/*
 	int i = DIMENSION_SENTINEL, j = DIMENSION_SENTINEL;
 	i = get_game_piece_under_mouse(window, WIDTH);
 	j = get_game_piece_under_mouse(window, HEIGHT);
@@ -214,9 +218,81 @@ void draw_window(const struct Window *window,
 	{
 		// TODO: Draw the hover icon.
 		//printf("i = %d j = %d\n", i, j);
-	}
+	} */
 
 	SDL_UpdateWindowSurface(window->window);
+}
+
+void process_window_events(struct Window *window, struct GameState *game_state,
+	struct GraphicResources *graphic_resources)
+{
+	SDL_Event event;	
+
+	while (SDL_PollEvent(&event))
+	{
+		if (event.window.event == SDL_WINDOWEVENT_CLOSE)
+		{
+			game_state->run_game = 0;
+		}
+
+		else if (event.type == SDL_WINDOWEVENT)
+		{
+			if (event.window.event == SDL_WINDOWEVENT_RESIZED)
+			{
+				int window_width, window_height;
+
+				SDL_GetWindowSize(window->window, 
+					&window_width, &window_height);
+
+				set_window_size(window, window_width, window_height);;
+			}
+
+		}
+	
+		else if (event.type == SDL_MOUSEBUTTONDOWN)
+		{
+			/*	Check if the mouse is over a game piece and if it is 
+				available. If so, claim it and check for a victory. */
+			int i = DIMENSION_SENTINEL, j = DIMENSION_SENTINEL;
+
+			// Bottleneck?
+			i = get_game_piece_under_mouse(window, WIDTH);
+			j = get_game_piece_under_mouse(window, HEIGHT);
+			//i = get_mouse_position_test(&window, WIDTH);
+			//j = get_mouse_position_test(&window, HEIGHT);
+
+			if (i != DIMENSION_SENTINEL && j != DIMENSION_SENTINEL 
+				&& get_game_matrix_value(game_state, i, j) 
+				== GAME_STATE_SENTINEL)
+			{
+				set_game_matrix_value(game_state, i, j, 
+					get_game_player(game_state));
+
+				if (check_victory_conditions(game_state, 
+					get_game_player(game_state)))
+				{
+					// TODO: Make an appropiate victory scene.
+					set_all_game_matrix_values(game_state, 
+						get_game_player(game_state));
+
+					// Otherwise they would not see the victory.
+					draw_window(window, game_state, graphic_resources);
+
+					SDL_Delay(2000);
+
+					game_state->run_game = 0;
+				}
+
+				if (get_game_player(game_state) == MOON)
+					set_game_player(game_state, STAR);
+				else if (get_game_player(game_state) == STAR)
+					set_game_player(game_state, MOON);
+			}
+		
+		}
+	}
+
+	draw_window(window, game_state, graphic_resources);
 }
 
 int get_mouse_position(const struct Window *window, 
@@ -238,6 +314,7 @@ int get_game_piece_under_mouse(const struct Window *window,
 {
 	/*	Determine the width and height of a game piece based on the
 		size of the viewport. */
+
 	float piece_width = window->viewport_w 
 		* GAME_BOARD_WIDTH_RATIO / BOARD_ROWS;
 	float piece_height = window->viewport_h 
@@ -292,3 +369,44 @@ int get_game_piece_under_mouse(const struct Window *window,
 
 	return DIMENSION_SENTINEL;
 }
+
+int get_mouse_position_test(const struct Window *window,
+	enum DimensionType dimension_type)
+{
+	//Get mouse position
+	int x = DIMENSION_SENTINEL, y = DIMENSION_SENTINEL;
+	x = get_mouse_position(window, X_POS);
+	y = get_mouse_position(window, Y_POS);
+
+	float piece_start_x = window->viewport_x_pos + (window->viewport_w / 2) 
+		- (window->viewport_w * GAME_BOARD_WIDTH_RATIO / 2);
+	float piece_start_y = window->viewport_y_pos + (window->viewport_h / 2) 
+		- (window->viewport_h * GAME_BOARD_HEIGHT_RATIO / 2);
+
+	float piece_width = window->viewport_w 
+		* GAME_BOARD_WIDTH_RATIO / BOARD_ROWS;
+	float piece_height = window->viewport_h 
+		* GAME_BOARD_HEIGHT_RATIO / BOARD_COLS;
+
+	float board_width = window->viewport_w 
+		* GAME_BOARD_WIDTH_RATIO;
+	float board_height = window->viewport_h 
+		* GAME_BOARD_HEIGHT_RATIO;
+
+
+
+	int relative_x = x - piece_start_x;
+	int relative_y = y - piece_start_y;
+
+	int row = relative_x / piece_width;
+	int col = relative_y / piece_height;
+
+	if (dimension_type == WIDTH)
+		return col;
+	else if (dimension_type == HEIGHT)
+		return row;
+	else
+		return DIMENSION_SENTINEL;	
+}
+
+

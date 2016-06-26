@@ -19,6 +19,8 @@ struct GameState
 {
 	struct Matrix *matrix;
 	int player_turn;
+	
+	int run_game;
 };
 
 /*	Initializes all variables in 'game_state'. 

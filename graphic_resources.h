@@ -5,6 +5,10 @@
 
 #include "SDL.h"
 
+#define TRANSPARENT_R 255
+#define TRANSPARENT_G 0
+#define TRANSPARENT_B 255
+
 struct GraphicResources
 {
 	SDL_Surface **images;
@@ -55,5 +59,9 @@ int unload_all_images(struct GraphicResources *graphic_resources);
 /*	Destroy 'graphic_resources', freeing all allocated memory and images
 	within. */
 int destroy_graphic_resources(struct GraphicResources *graphic_resources);
+
+
+int load_all_images(size_t image_count,
+	struct GraphicResources *graphic_resources);
 
 #endif
