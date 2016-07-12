@@ -12,6 +12,7 @@
 struct GraphicResources
 {
 	SDL_Surface **images;
+	SDL_Texture **textures;
 
 	size_t image_count;
 	size_t max_images;
@@ -28,6 +29,7 @@ int initialize_graphic_resources(struct GraphicResources *graphic_resources,
 /*	Returns the current amount of images loaded into 'graphic_resources'. */
 int get_image_count(const struct GraphicResources *graphic_resources);
 
+//	TODO: Test this function.
 /*	Sets the maximum amount of images 'graphics_resources' can hold to 
 	'max_images'.
 	Returns 0 if successfully able to increase the space for images, otherwise
@@ -43,7 +45,11 @@ int get_max_images(const struct GraphicResources *graphic_resources);
 	Returns 0 if successful, otherwise:
 		1 if the image was unable to be loaded.
 		2 for an unspecified error. (TODO: Remove.) */
-int load_image(struct GraphicResources *graphic_resources, char *path);
+int load_image(struct GraphicResources *graphic_resources,
+	SDL_Renderer *renderer, char *path);
+
+int load_all_images(size_t image_count,
+	struct GraphicResources *graphic_resources, SDL_Renderer *renderer);
 
 /*	Unloads the image within 'graphic_resources' containg 'image_id'.
 	Returns 0 if successful, otherwise
@@ -59,9 +65,5 @@ int unload_all_images(struct GraphicResources *graphic_resources);
 /*	Destroy 'graphic_resources', freeing all allocated memory and images
 	within. */
 int destroy_graphic_resources(struct GraphicResources *graphic_resources);
-
-
-int load_all_images(size_t image_count,
-	struct GraphicResources *graphic_resources);
 
 #endif

@@ -5,6 +5,7 @@
 
 #include "game_state.h"
 #include "graphic_resources.h"
+#include "timer.h"
 
 #define WINDOW_DEFAULT_WIDTH 500
 #define WINDOW_DEFAULT_HEIGHT 500
@@ -20,10 +21,17 @@ struct Window
 	float x_pos, y_pos, width, height;
 	char *window_title;
 
+	SDL_Renderer* renderer;
 	SDL_Window* window;
 
-	float viewport_x_pos, viewport_y_pos, viewport_w, viewport_h;
+	float viewport_x_pos, viewport_y_pos, viewport_width, viewport_height;
 	float viewport_aspect_ratio;
+
+	float background_scroll_x_pos;
+	float background_scroll_x_pos_mod;
+
+	float game_piece_angle;
+	float game_piece_angle_mod;
 };
 
 /*	Initializes a 'window' structure.
@@ -90,7 +98,7 @@ void draw_window(const struct Window *window,
 
 /*	Processes the event loop for the 'window', based on information from
 	'game_state' and using the images from 'graphic_resources'. */
-void process_window_events(struct Window *window, struct GameState *game_state,
+int process_window_events(struct Window *window, struct GameState *game_state,
 	struct GraphicResources *graphic_resources);
 
 /*	Gets the current x-position or y-position of the mouse within 'window'
@@ -112,5 +120,9 @@ int get_mouse_position_test(const struct Window *window,
 	are WIDTH and HEIGHT. */
 int get_game_piece_under_mouse(const struct Window *window,
 	enum DimensionType dimension_type);
+
+//	TODO: Test this.
+void scroll_background(struct Window *window,
+	struct GraphicResources *graphic_resources);
 
 #endif

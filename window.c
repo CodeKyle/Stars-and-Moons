@@ -3,18 +3,29 @@
 
 #include "window.h"
 
-#include <stdio.h> // removes
-
+//TODO: Update .h comments.
 int initialize_window(struct Window *window)
 {
 	window->x_pos = window->y_pos = window->height = window->width = 0;
+
 	window->window_title = NULL;
 
 	window->window = SDL_CreateWindow(window->window_title, window->x_pos, 
 		window->y_pos, window->width, window->height, SDL_WINDOW_RESIZABLE);
 
+	window->renderer = SDL_CreateRenderer(window->window, -1, 
+		SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+	//	Don't hardcode.
+	window->background_scroll_x_pos = 0;
+	window->background_scroll_x_pos_mod = 2;
+	window->game_piece_angle = 0;
+	window->game_piece_angle_mod = 2;
+
 	if (window->window == NULL)
 		return 1;
+	else if (window->renderer == NULL)
+		return 2;
 
 	return 0;
 }
@@ -78,6 +89,7 @@ int destroy_window(struct Window *window)
 	if (window == NULL || window->window == NULL)
 		return 1;
 
+	SDL_DestroyRenderer(window->renderer);
 	SDL_DestroyWindow(window->window);
 	return 0;
 }
@@ -95,22 +107,24 @@ void resize_window_viewport(struct Window *window)
 		resize the width of the viewport to accomodate. */
 	if ( (window->width / window->viewport_aspect_ratio) > window->height)
 	{
-		window->viewport_h = window->height;
-		window->viewport_w = window->viewport_h 
+		window->viewport_height = window->height;
+		window->viewport_width = window->viewport_height 
 			* window->viewport_aspect_ratio;
 	}
 	
 	// Otherwise, set the height of the viewport to accomodate its width.
 	else
 	{
-		window->viewport_w = window->width;
-		window->viewport_h = window->viewport_w 
+		window->viewport_width = window->width;
+		window->viewport_height = window->viewport_width 
 			/ window->viewport_aspect_ratio;		
 	}
 
 	// Center the viewport.
-	window->viewport_x_pos = (window->width / 2) - (window->viewport_w / 2);
-	window->viewport_y_pos = (window->height / 2) - (window->viewport_h / 2);
+	window->viewport_x_pos = (window->width / 2) 
+		- (window->viewport_width / 2);
+	window->viewport_y_pos = (window->height / 2) 
+		- (window->viewport_height / 2);
 }
 
 void draw_background(const struct Window *window,
@@ -121,12 +135,17 @@ void draw_background(const struct Window *window,
 	// Draw the background on the entire viewport.
 	destination.x = window->viewport_x_pos;
 	destination.y = window->viewport_y_pos;
-	destination.w = window->viewport_w;
-	destination.h = window->viewport_h;
+	destination.w = window->viewport_width;
+	destination.h = window->viewport_height;
 
-	// TODO: Don't hardcore the image.
-	SDL_BlitScaled(graphic_resources->images[0], NULL,
-		SDL_GetWindowSurface(window->window), &destination);
+	SDL_Rect chunk;
+	chunk.x = window->background_scroll_x_pos;
+	chunk.y = destination.y;
+	chunk.w = destination.w;
+	chunk.h = destination.h;
+	
+	SDL_RenderCopy(window->renderer, graphic_resources->textures[0],
+		&chunk, &destination);
 }
 
 void draw_game_board(const struct Window *window,
@@ -135,18 +154,22 @@ void draw_game_board(const struct Window *window,
 	SDL_Rect destination;
 
 	// Size the game board based on the viewport.
-	destination.w = window->viewport_w * GAME_BOARD_WIDTH_RATIO;
-	destination.h = window->viewport_h * GAME_BOARD_HEIGHT_RATIO;
+	destination.w = window->viewport_width * GAME_BOARD_WIDTH_RATIO;
+	destination.h = window->viewport_height * GAME_BOARD_HEIGHT_RATIO;
 
 	// Center the game board.
 	destination.x = window->viewport_x_pos 
-		+ (window->viewport_w / 2) - (destination.w / 2);
+		+ (window->viewport_width / 2) - (destination.w / 2);
 	destination.y = window->viewport_y_pos 
-		+ (window->viewport_h / 2) - (destination.h / 2);
+		+ (window->viewport_height / 2) - (destination.h / 2);
 
 	// TODO: Don't hardcode the image.
+	/*
 	SDL_BlitScaled(graphic_resources->images[1], NULL,
 		SDL_GetWindowSurface(window->window), &destination);	
+	*/
+	SDL_RenderCopy(window->renderer, graphic_resources->textures[1],
+		NULL, &destination);
 }
 
 void draw_game_pieces(const struct Window *window,
@@ -155,16 +178,18 @@ void draw_game_pieces(const struct Window *window,
 {
 	/*	Determine the width and height of a game piece based on the
 		size of the viewport. */
-	float piece_width = window->viewport_w 
+	float piece_width = window->viewport_width
 		* GAME_BOARD_WIDTH_RATIO / BOARD_ROWS;
-	float piece_height = window->viewport_h 
+	float piece_height = window->viewport_height
 		* GAME_BOARD_HEIGHT_RATIO / BOARD_COLS;
 
 	// Determine the absolute pixel position of the first game piece.
-	float piece_start_x = window->viewport_x_pos + (window->viewport_w / 2) 
-		- (window->viewport_w * GAME_BOARD_WIDTH_RATIO / 2);
-	float piece_start_y = window->viewport_y_pos + (window->viewport_h / 2) 
-		- (window->viewport_h * GAME_BOARD_HEIGHT_RATIO / 2);
+	float piece_start_x = window->viewport_x_pos 
+		+ (window->viewport_width / 2) 
+		- (window->viewport_width * GAME_BOARD_WIDTH_RATIO / 2);
+	float piece_start_y = window->viewport_y_pos 
+		+ (window->viewport_height / 2) 
+		- (window->viewport_height * GAME_BOARD_HEIGHT_RATIO / 2);
 
 	// Track the current pixel positions.
 	float current_x_pos = piece_start_x;
@@ -185,9 +210,16 @@ void draw_game_pieces(const struct Window *window,
 			// Place an image depending on the value in the game matrix.
 			if (get_game_matrix_value(game_state, i, j) != GAME_STATE_SENTINEL)
 			{
+				/*
 				SDL_BlitScaled(graphic_resources->images
 					[get_game_matrix_value(game_state, i, j)], NULL,
-					SDL_GetWindowSurface(window->window), &destination);		
+					SDL_GetWindowSurface(window->window), &destination);	
+				*/
+				SDL_RenderCopyEx(window->renderer, 
+					graphic_resources->textures
+					[get_game_matrix_value(game_state, i, j)], NULL,
+					&destination, window->game_piece_angle, NULL, 0);
+
 			}
 				
 			current_x_pos += piece_width;
@@ -202,6 +234,8 @@ void draw_window(const struct Window *window,
 	const struct GameState *game_state,
 	const struct GraphicResources *graphic_resources)
 {
+	SDL_RenderClear(window->renderer);
+
 	draw_background(window, graphic_resources);
 	draw_game_board(window, graphic_resources);
 	draw_game_pieces(window, game_state, graphic_resources);
@@ -220,19 +254,22 @@ void draw_window(const struct Window *window,
 		//printf("i = %d j = %d\n", i, j);
 	} */
 
-	SDL_UpdateWindowSurface(window->window);
+	//SDL_UpdateWindowSurface(window->window);
+	SDL_RenderPresent(window->renderer);
 }
 
-void process_window_events(struct Window *window, struct GameState *game_state,
+int process_window_events(struct Window *window, struct GameState *game_state,
 	struct GraphicResources *graphic_resources)
 {
-	SDL_Event event;	
+	SDL_Event event;
 
 	while (SDL_PollEvent(&event))
 	{
 		if (event.window.event == SDL_WINDOWEVENT_CLOSE)
 		{
-			game_state->run_game = 0;
+			//game_state->run_game = 0;
+
+			return 0;
 		}
 
 		else if (event.type == SDL_WINDOWEVENT)
@@ -244,9 +281,15 @@ void process_window_events(struct Window *window, struct GameState *game_state,
 				SDL_GetWindowSize(window->window, 
 					&window_width, &window_height);
 
-				set_window_size(window, window_width, window_height);;
+				set_window_size(window, window_width, window_height);
 			}
 
+			//draw_window(window, game_state, graphic_resources);
+
+		}
+		else if (event.type == SDL_MOUSEMOTION)
+		{
+			//draw_window(window, game_state, graphic_resources);
 		}
 	
 		else if (event.type == SDL_MOUSEBUTTONDOWN)
@@ -260,6 +303,7 @@ void process_window_events(struct Window *window, struct GameState *game_state,
 			j = get_game_piece_under_mouse(window, HEIGHT);
 			//i = get_mouse_position_test(&window, WIDTH);
 			//j = get_mouse_position_test(&window, HEIGHT);
+			//printf("(%d, %d)\n", i, j);
 
 			if (i != DIMENSION_SENTINEL && j != DIMENSION_SENTINEL 
 				&& get_game_matrix_value(game_state, i, j) 
@@ -280,7 +324,8 @@ void process_window_events(struct Window *window, struct GameState *game_state,
 
 					SDL_Delay(2000);
 
-					game_state->run_game = 0;
+					game_state->run_game = 2;
+					return 2;
 				}
 
 				if (get_game_player(game_state) == MOON)
@@ -292,7 +337,11 @@ void process_window_events(struct Window *window, struct GameState *game_state,
 		}
 	}
 
-	draw_window(window, game_state, graphic_resources);
+	window->game_piece_angle += window->game_piece_angle_mod;
+	scroll_background(window, graphic_resources);
+	//draw_window(window, game_state, graphic_resources);
+
+	return 1;
 }
 
 int get_mouse_position(const struct Window *window, 
@@ -315,16 +364,18 @@ int get_game_piece_under_mouse(const struct Window *window,
 	/*	Determine the width and height of a game piece based on the
 		size of the viewport. */
 
-	float piece_width = window->viewport_w 
+	float piece_width = window->viewport_width
 		* GAME_BOARD_WIDTH_RATIO / BOARD_ROWS;
-	float piece_height = window->viewport_h 
+	float piece_height = window->viewport_height
 		* GAME_BOARD_HEIGHT_RATIO / BOARD_COLS;
 
 	// Determine the absolute pixel position of the first game piece.
-	float piece_start_x = window->viewport_x_pos + (window->viewport_w / 2) 
-		- (window->viewport_w * GAME_BOARD_WIDTH_RATIO / 2);
-	float piece_start_y = window->viewport_y_pos + (window->viewport_h / 2) 
-		- (window->viewport_h * GAME_BOARD_HEIGHT_RATIO / 2);
+	float piece_start_x = window->viewport_x_pos 
+		+ (window->viewport_width / 2) 
+		- (window->viewport_width * GAME_BOARD_WIDTH_RATIO / 2);
+	float piece_start_y = window->viewport_y_pos 
+		+ (window->viewport_height / 2) 
+		- (window->viewport_height * GAME_BOARD_HEIGHT_RATIO / 2);
 
 	float current_x_pos = piece_start_x;
 	float current_y_pos = piece_start_y;
@@ -335,8 +386,10 @@ int get_game_piece_under_mouse(const struct Window *window,
 
 	// If mouse position is out of range, stop now.
 	if (x < piece_start_x || y < piece_start_y
-		|| x > piece_start_x + window->viewport_w * GAME_BOARD_WIDTH_RATIO
-		|| y > piece_start_y + window->viewport_h * GAME_BOARD_HEIGHT_RATIO)
+		|| x > piece_start_x + window->viewport_width 
+			* GAME_BOARD_WIDTH_RATIO
+		|| y > piece_start_y + window->viewport_height 
+			* GAME_BOARD_HEIGHT_RATIO)
 		return DIMENSION_SENTINEL;	
 
 	/*	If mouse position is within range of the game board dimensions, 
@@ -378,22 +431,22 @@ int get_mouse_position_test(const struct Window *window,
 	x = get_mouse_position(window, X_POS);
 	y = get_mouse_position(window, Y_POS);
 
-	float piece_start_x = window->viewport_x_pos + (window->viewport_w / 2) 
-		- (window->viewport_w * GAME_BOARD_WIDTH_RATIO / 2);
-	float piece_start_y = window->viewport_y_pos + (window->viewport_h / 2) 
-		- (window->viewport_h * GAME_BOARD_HEIGHT_RATIO / 2);
+	float piece_start_x = window->viewport_x_pos 
+		+ (window->viewport_width / 2) 
+		- (window->viewport_width * GAME_BOARD_WIDTH_RATIO / 2);
+	float piece_start_y = window->viewport_y_pos 
+		+ (window->viewport_height / 2) 
+		- (window->viewport_height * GAME_BOARD_HEIGHT_RATIO / 2);
 
-	float piece_width = window->viewport_w 
+	float piece_width = window->viewport_width 
 		* GAME_BOARD_WIDTH_RATIO / BOARD_ROWS;
-	float piece_height = window->viewport_h 
+	float piece_height = window->viewport_height
 		* GAME_BOARD_HEIGHT_RATIO / BOARD_COLS;
 
-	float board_width = window->viewport_w 
+	float board_width = window->viewport_width 
 		* GAME_BOARD_WIDTH_RATIO;
-	float board_height = window->viewport_h 
+	float board_height = window->viewport_height 
 		* GAME_BOARD_HEIGHT_RATIO;
-
-
 
 	int relative_x = x - piece_start_x;
 	int relative_y = y - piece_start_y;
@@ -410,3 +463,22 @@ int get_mouse_position_test(const struct Window *window,
 }
 
 
+void scroll_background(struct Window *window,
+	struct GraphicResources *graphic_resources)
+{
+	int image_width = 0;
+	int image_height = 0;
+	SDL_QueryTexture(graphic_resources->textures[0],
+		SDL_PIXELFORMAT_UNKNOWN, SDL_TEXTUREACCESS_STATIC,
+		&image_width, &image_height);
+
+	/*	If the end of the image is not yet visible in the window, scroll
+		normally. Otherwise, if the end of the image is coming, snap back
+		to the an earlier position of the image to create a seamless
+		scrolling experience. */
+	if (window->background_scroll_x_pos + window->viewport_width < image_width)
+		window->background_scroll_x_pos += window->background_scroll_x_pos_mod;
+	else
+		window->background_scroll_x_pos = 
+			(window->background_scroll_x_pos - window->viewport_width) / 2;
+}
